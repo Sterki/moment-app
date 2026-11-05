@@ -1,3 +1,6 @@
+<script setup lang="ts">
+import { Sparkles } from 'lucide-vue-next'
+</script>
 <template>
   <div class="ambient-background" aria-hidden="true">
     <span class="ambient-glow ambient-peach" />
@@ -13,9 +16,9 @@
     <svg class="ambient-ribbon ribbon-two" viewBox="0 0 160 300" fill="none">
       <path d="M80 0C-65 75 225 100 80 175S-40 260 80 300" />
     </svg>
-    <span class="ambient-spark ambient-spark-one">✧</span>
-    <span class="ambient-spark ambient-spark-two">✳</span>
-    <span class="ambient-spark ambient-spark-three">✦</span>
+    <Sparkles class="ambient-spark ambient-spark-one" :size="28" />
+    <Sparkles class="ambient-spark ambient-spark-two" :size="28" />
+    <Sparkles class="ambient-spark ambient-spark-three" :size="28" />
     <span
       v-for="i in 18"
       :key="i"

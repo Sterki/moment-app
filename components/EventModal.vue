@@ -21,7 +21,9 @@ const date = ref(props.event ? localDate(props.event.date) : '')
 const category = ref(props.event?.category || props.categories[0]!.id)
 const managingCategories = ref(false)
 const note = ref(props.event?.note || '')
-onMounted(() => dialog.value?.showModal())
+const { onBackdropPointerDown, onBackdropClick } = useModalDialog(dialog, () =>
+  emit('close'),
+)
 function submit() {
   if (!title.value.trim() || !date.value) return
   emit('save', {
@@ -39,12 +41,11 @@ function submit() {
   <dialog
     ref="dialog"
     class="modal"
+    aria-labelledby="event-modal-title"
+    tabindex="-1"
     @close="emit('close')"
-    @click="
-      (e) => {
-        if (e.target === dialog) emit('close')
-      }
-    "
+    @pointerdown="onBackdropPointerDown"
+    @click="onBackdropClick"
   >
     <form @submit.prevent="submit">
       <div class="modal-heading">
@@ -58,7 +59,9 @@ function submit() {
           <X :size="21" />
         </button>
       </div>
-      <h2>{{ event ? 'Edita tu momento' : 'Algo bonito se acerca.' }}</h2>
+      <h2 id="event-modal-title">
+        {{ event ? 'Edita tu momento' : 'Algo bonito se acerca.' }}
+      </h2>
       <p>Dale un lugar a esa fecha especial.</p>
       <label
         >Nombre del evento<input
@@ -66,7 +69,6 @@ function submit() {
           required
           maxlength="70"
           placeholder="Ej. Mi próximo gran viaje"
-          autofocus
       /></label>
       <label
         >Fecha y hora<input v-model="date" type="datetime-local" required

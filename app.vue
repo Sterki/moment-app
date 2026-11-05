@@ -27,11 +27,8 @@ const modalOpen = ref(false)
 const editing = ref<CountdownEvent>()
 const deleting = ref<CountdownEvent>()
 const deleteDialog = ref<HTMLDialogElement>()
-watch(deleting, async (event) => {
-  if (event) {
-    await nextTick()
-    deleteDialog.value?.showModal()
-  }
+useModalDialog(deleteDialog, () => {
+  deleting.value = undefined
 })
 const toast = ref('')
 let toastTimer: ReturnType<typeof setTimeout>
@@ -177,8 +174,8 @@ onUnmounted(() => clearTimeout(toastTimer))
         </div>
         <div class="hero-decoration orb-one" />
         <div class="hero-decoration orb-two" />
-        <span class="hero-star star-one">✳</span
-        ><span class="hero-star star-two">✦</span>
+        <Sparkles class="hero-star star-one" :size="64" aria-hidden="true" />
+        <Sparkles class="hero-star star-two" :size="24" aria-hidden="true" />
       </section>
       <section class="events-section">
         <div class="section-heading">
@@ -320,7 +317,7 @@ onUnmounted(() => clearTimeout(toastTimer))
         </div>
       </section>
       <aside class="quote">
-        <span class="quote-star">✳</span>
+        <Sparkles class="quote-star" :size="24" aria-hidden="true" />
         <p>La felicidad también está en <em>la espera.</em></p>
         <span class="quote-line" />
       </aside>
@@ -351,9 +348,11 @@ onUnmounted(() => clearTimeout(toastTimer))
       ref="deleteDialog"
       v-if="deleting"
       class="delete-modal"
+      tabindex="-1"
+      aria-labelledby="delete-title"
       @close="deleting = undefined"
     >
-      <h2>¿Eliminar este momento?</h2>
+      <h2 id="delete-title">¿Eliminar este momento?</h2>
       <p>“{{ deleting.title }}” se eliminará de este navegador.</p>
       <div>
         <button class="secondary" @click="deleting = undefined">Cancelar</button

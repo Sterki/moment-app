@@ -22,7 +22,9 @@ const preview = computed(() => ({
   emoji: symbol.value,
   color: color.value,
 }))
-onMounted(() => dialog.value?.showModal())
+const { onBackdropPointerDown, onBackdropClick } = useModalDialog(dialog, () =>
+  emit('close'),
+)
 function edit(category?: EventCategory) {
   selectedId.value = category?.id || ''
   name.value = category?.label || ''
@@ -67,13 +69,11 @@ function submit() {
   <dialog
     ref="dialog"
     class="modal category-manager"
+    tabindex="-1"
     aria-labelledby="categories-title"
     @close="emit('close')"
-    @click="
-      (e) => {
-        if (e.target === dialog) emit('close')
-      }
-    "
+    @pointerdown="onBackdropPointerDown"
+    @click="onBackdropClick"
   >
     <div class="modal-heading">
       <span class="eyebrow"><Palette :size="13" /> UN TOQUE MUY TUYO</span
