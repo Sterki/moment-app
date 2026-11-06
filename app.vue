@@ -52,8 +52,26 @@ const upcoming = computed(() =>
     .filter((e) => new Date(e.date).getTime() > now.value)
     .sort((a, b) => Date.parse(a.date) - Date.parse(b.date)),
 )
-const featured = computed(
-  () => upcoming.value.find((e) => e.favorite) || upcoming.value[0],
+const featured = computed(() => upcoming.value[0])
+const featuredCategory = computed(() =>
+  featured.value ? categoryFor(featured.value.category) : undefined,
+)
+const featuredMessage = computed(() => {
+  if (!featured.value) return ''
+  const hours = (Date.parse(featured.value.date) - now.value) / 3600000
+  return hours < 1
+    ? 'Ya casi está aquí.'
+    : hours < 24
+      ? 'A menos de un día de vivirlo.'
+      : 'Cada vez más cerca.'
+})
+const featuredTime = computed(() =>
+  featured.value
+    ? new Intl.DateTimeFormat('es', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(featured.value.date))
+    : '',
 )
 const countdown = computed(() =>
   featured.value ? remaining(featured.value.date, now.value) : [0, 0, 0, 0],
@@ -165,45 +183,73 @@ onUnmounted(() => clearTimeout(toastTimer))
           <Plus :size="19" />Crear evento
         </button>
       </section>
-      <section class="hero" :class="{ 'hero-empty': !featured }">
+      <section
+        class="hero"
+        :class="[
+          featuredCategory?.color || 'sage',
+          { 'hero-empty': !featured },
+        ]"
+        aria-labelledby="featured-title"
+      >
         <div class="hero-copy">
-          <span class="hero-pill"
-            ><Sparkles :size="13" />{{
-              featured ? 'EN EL HORIZONTE' : 'TU PRÓXIMO GRAN MOMENTO'
-            }}</span
-          >
-          <h2>{{ featured?.title || 'Todo empieza con una ilusión.' }}</h2>
-          <p v-if="featured">
-            <CalendarDays :size="15" />{{ formatDate(featured.date)
-            }}<span class="hero-date-dot">·</span
-            >{{ featured.note || 'Cada segundo, un poquito más cerca.' }}
+          <div class="hero-heading">
+            <span v-if="featuredCategory" class="hero-category-icon"
+              ><CategorySymbol :symbol="featuredCategory.emoji" :size="25"
+            /></span>
+            <div>
+              <span class="hero-pill"
+                ><Sparkles :size="13" />{{
+                  featured
+                    ? 'TU MOMENTO MÁS CERCANO'
+                    : 'TU PRÓXIMO GRAN MOMENTO'
+                }}</span
+              >
+              <span v-if="featuredCategory" class="hero-category-label">{{
+                featuredCategory.label
+              }}</span>
+            </div>
+          </div>
+          <h2 id="featured-title">
+            {{ featured?.title || 'Todo empieza con una ilusión.' }}
+          </h2>
+          <p v-if="featured" class="hero-date">
+            <CalendarDays :size="15" /><time :datetime="featured.date"
+              >{{ formatDate(featured.date) }} <span aria-hidden="true">·</span>
+              {{ featuredTime }}</time
+            >
           </p>
-          <p v-else>Crea un evento y empieza a contar los buenos momentos.</p>
+          <p class="hero-note">
+            {{
+              featured
+                ? featured.note || 'Cada segundo, un poquito más cerca.'
+                : 'Crea un evento y empieza a contar los buenos momentos.'
+            }}
+          </p>
           <button class="hero-link" @click="open(featured)">
-            {{ featured ? 'Ver mi evento' : 'Crear un evento'
+            {{ featured ? 'Ver mi momento' : 'Crear un evento'
             }}<ArrowUpRight :size="16" />
           </button>
         </div>
-        <div v-if="featured" class="hero-timer" aria-label="Tiempo restante">
-          <div
-            v-for="(label, i) in ['DÍAS', 'HORAS', 'MINUTOS', 'SEGUNDOS']"
-            :key="label"
-            class="timer-unit"
-          >
-            <div class="timer-number">
-              <Transition name="tick" mode="out-in"
-                ><span :key="countdown[i]">{{
-                  String(countdown[i]).padStart(2, '0')
-                }}</span></Transition
-              >
+        <div v-if="featured" class="hero-countdown">
+          <p class="hero-countdown-heading">{{ featuredMessage }}</p>
+          <div class="hero-timer" aria-label="Tiempo restante">
+            <div
+              v-for="(label, i) in ['DÍAS', 'HORAS', 'MINUTOS', 'SEGUNDOS']"
+              :key="label"
+              class="timer-unit"
+            >
+              <div class="timer-number">
+                <Transition name="tick" mode="out-in"
+                  ><span :key="countdown[i]">{{
+                    String(countdown[i]).padStart(2, '0')
+                  }}</span></Transition
+                >
+              </div>
+              <span class="timer-label">{{ label }}</span>
             </div>
-            <span class="timer-label">{{ label }}</span>
           </div>
+          <span class="hero-countdown-footnote">Lo bueno está por venir.</span>
         </div>
-        <div class="hero-decoration orb-one" />
-        <div class="hero-decoration orb-two" />
-        <Sparkles class="hero-star star-one" :size="64" aria-hidden="true" />
-        <Sparkles class="hero-star star-two" :size="24" aria-hidden="true" />
       </section>
       <section class="events-section">
         <div class="section-heading">
@@ -277,8 +323,8 @@ onUnmounted(() => clearTimeout(toastTimer))
               :class="{ active: category === c.id }"
               @click="category = c.id"
             >
-              <span>{{ c.emoji }}</span
-              >{{ c.label }}
+              <CategorySymbol :symbol="c.emoji" :size="15" />
+              {{ c.label }}
             </button>
           </div>
           <label class="search"

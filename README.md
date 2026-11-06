@@ -60,3 +60,9 @@ node tests/storage-browser.mjs
 Comprueban migración intacta, reinicio completo del navegador, escrituras simultáneas entre pestañas, transacciones abortadas después de que una petición haya tenido éxito, reintento de categorías y persistencia de listas vacías.
 
 Para la comprobación adicional con WebKit y tamaño de iPhone, instala Playwright y su navegador WebKit en el entorno de pruebas y ejecuta `node tests/storage-webkit.mjs`. Admite `PLAYWRIGHT_MODULE` para una instalación externa y `WEBKIT_EXECUTABLE` para un ejecutable personalizado. Esta prueba incluye la reversión de una migración inválida. La emulación de WebKit no sustituye una prueba final en un iPhone real.
+
+## Momento destacado
+
+El bloque superior muestra el evento futuro más cercano por fecha y hora, sin prioridad de favoritos e independientemente de los filtros de tarjetas. Al llegar su hora, pasa al siguiente evento pendiente. Usa el color y símbolo de su categoría, fecha y hora locales y una cuenta atrás adaptable a móvil.
+
+La prueba `node tests/featured-webkit.mjs` (con el mismo entorno Playwright/WebKit) comprueba la prioridad cronológica frente a favoritos, independencia de filtros, relevo al vencer, estado vacío y tamaños de móvil y escritorio.
