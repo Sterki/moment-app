@@ -1,15 +1,18 @@
 <script setup lang="ts">
+import { createId } from '~/utils/createId'
 import { X, ArrowRight, Palette } from 'lucide-vue-next'
 import type { CountdownEvent } from '~/types/event'
 import type { EventCategory } from '~/types/category'
 const props = defineProps<{
+  storageError?: string
+  saving?: boolean
+  saveCategory: (category: EventCategory) => Promise<boolean>
   event?: CountdownEvent
   categories: EventCategory[]
 }>()
 const emit = defineEmits<{
   close: []
   save: [event: CountdownEvent]
-  saveCategory: [category: EventCategory]
 }>()
 const dialog = ref<HTMLDialogElement>()
 const localDate = (value: string) => {
@@ -21,13 +24,15 @@ const date = ref(props.event ? localDate(props.event.date) : '')
 const category = ref(props.event?.category || props.categories[0]!.id)
 const managingCategories = ref(false)
 const note = ref(props.event?.note || '')
-const { onBackdropPointerDown, onBackdropClick } = useModalDialog(dialog, () =>
-  emit('close'),
+const { onBackdropPointerDown, onBackdropClick } = useModalDialog(
+  dialog,
+  () => !props.saving && emit('close'),
 )
 function submit() {
+  if (props.saving) return
   if (!title.value.trim() || !date.value) return
   emit('save', {
-    id: props.event?.id || crypto.randomUUID(),
+    id: props.event?.id || createId(),
     title: title.value.trim(),
     date: new Date(date.value).toISOString(),
     category: category.value,
@@ -44,6 +49,7 @@ function submit() {
     aria-labelledby="event-modal-title"
     tabindex="-1"
     @close="emit('close')"
+    @cancel="saving && $event.preventDefault()"
     @pointerdown="onBackdropPointerDown"
     @click="onBackdropClick"
   >
@@ -54,6 +60,7 @@ function submit() {
           type="button"
           class="icon-button"
           aria-label="Cerrar"
+          :disabled="saving"
           @click="emit('close')"
         >
           <X :size="21" />
@@ -103,8 +110,21 @@ function submit() {
           rows="2"
         />
       </label>
-      <button class="primary modal-submit" type="submit">
-        {{ event ? 'Guardar cambios' : 'Crear mi cuenta atrás'
+      <p v-if="storageError" class="storage-warning" role="alert">
+        {{ storageError }}
+      </p>
+      <button
+        class="primary modal-submit"
+        type="submit"
+        :disabled="saving"
+        :aria-busy="saving"
+      >
+        {{
+          saving
+            ? 'Guardando…'
+            : event
+              ? 'Guardar cambios'
+              : 'Crear mi cuenta atrás'
         }}<ArrowRight :size="18" />
       </button>
     </form>
@@ -112,7 +132,7 @@ function submit() {
       v-if="managingCategories"
       :categories="categories"
       @close="managingCategories = false"
-      @save="emit('saveCategory', $event)"
+      :save-category="saveCategory"
     />
   </dialog>
 </template>

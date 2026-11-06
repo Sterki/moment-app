@@ -1,4 +1,7 @@
 export default defineNuxtConfig({
+  $env: {
+    build: { buildDir: '.nuxt-production' },
+  },
   compatibilityDate: '2025-01-01',
   ssr: false,
   devtools: { enabled: false },

@@ -11,6 +11,7 @@ import type { EventCategory } from '~/types/category'
 const props = defineProps<{
   event: CountdownEvent
   now: number
+  busy?: boolean
   category: EventCategory
 }>()
 defineEmits<{
@@ -30,6 +31,7 @@ const finished = computed(
         ><CategorySymbol :symbol="category.emoji" :size="25" /></span
       ><button
         class="icon-button favorite"
+        :disabled="busy"
         :class="{ selected: event.favorite }"
         :aria-label="
           event.favorite ? 'Quitar de favoritos' : 'Añadir a favoritos'
@@ -59,12 +61,14 @@ const finished = computed(
       <div class="card-actions">
         <button
           class="icon-button"
+          :disabled="busy"
           aria-label="Editar evento"
           @click="$emit('edit', event)"
         >
           <Pencil :size="15" /></button
         ><button
           class="icon-button"
+          :disabled="busy"
           aria-label="Eliminar evento"
           @click="$emit('delete', event)"
         >

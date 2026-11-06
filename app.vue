@@ -16,8 +16,23 @@ import {
   Palette,
 } from 'lucide-vue-next'
 import { remaining, formatDate, type CountdownEvent } from '~/types/event'
-const { events, now, storageError, save, remove, toggleFavorite } = useEvents()
-const { categories, categoryError, saveCategory, categoryFor } = useCategories()
+const {
+  events,
+  now,
+  storageError,
+  loading,
+  saving,
+  save,
+  remove,
+  toggleFavorite,
+} = useEvents()
+const {
+  categories,
+  categoryError,
+  categoriesLoading,
+  saveCategory,
+  categoryFor,
+} = useCategories()
 const categoriesOpen = ref(false)
 const tab = ref('upcoming')
 const search = ref('')
@@ -69,6 +84,7 @@ const visible = computed(() =>
     ),
 )
 function open(event?: CountdownEvent) {
+  if (loading.value || categoriesLoading.value) return
   editing.value = event
   modalOpen.value = true
 }
@@ -79,8 +95,12 @@ function notify(message: string) {
     toast.value = ''
   }, 3000)
 }
-function onSave(event: CountdownEvent) {
-  save(event)
+async function onSave(event: CountdownEvent) {
+  if (saving.value) return
+  if (!(await save(event))) {
+    notify('No se pudo guardar. Tu formulario sigue abierto para reintentarlo.')
+    return
+  }
   modalOpen.value = false
   notify(
     editing.value ? 'Momento actualizado' : 'Tu nuevo momento está guardado',
@@ -91,8 +111,12 @@ function resetFilters() {
   category.value = 'all'
   tab.value = 'upcoming'
 }
-function onDelete() {
-  if (deleting.value) remove(deleting.value.id)
+async function onDelete() {
+  if (saving.value) return
+  if (deleting.value && !(await remove(deleting.value.id))) {
+    notify('No se pudo confirmar la eliminación. Vuelve a intentarlo.')
+    return
+  }
   deleting.value = undefined
   notify('Evento eliminado')
 }
@@ -133,7 +157,11 @@ onUnmounted(() => clearTimeout(toastTimer))
             espacio para los momentos que importan.
           </p>
         </div>
-        <button class="primary" @click="open()">
+        <button
+          class="primary"
+          :disabled="loading || categoriesLoading"
+          @click="open()"
+        >
           <Plus :size="19" />Crear evento
         </button>
       </section>
@@ -230,6 +258,7 @@ onUnmounted(() => clearTimeout(toastTimer))
           <button
             type="button"
             class="manage-categories-button"
+            :disabled="categoriesLoading"
             @click="categoriesOpen = true"
           >
             <Palette :size="15" />Personalizar categorías
@@ -272,11 +301,13 @@ onUnmounted(() => clearTimeout(toastTimer))
         >
           {{ storageError || categoryError }}
         </p>
+        <p v-if="loading" role="status">Cargando tus momentos…</p>
         <TransitionGroup name="cards" tag="div" class="event-grid"
           ><EventCard
             v-for="event in visible"
             :key="event.id"
             :event="event"
+            :busy="saving"
             :category="categoryFor(event.category)"
             :now="now"
             @favorite="toggleFavorite"
@@ -334,14 +365,16 @@ onUnmounted(() => clearTimeout(toastTimer))
       v-if="categoriesOpen"
       :categories="categories"
       @close="categoriesOpen = false"
-      @save="saveCategory"
+      :save-category="saveCategory"
     />
     <EventModal
       v-if="modalOpen"
       :event="editing"
       :categories="categories"
-      @save-category="saveCategory"
-      @close="modalOpen = false"
+      :storage-error="storageError"
+      :saving="saving"
+      :save-category="saveCategory"
+      @close="!saving && (modalOpen = false)"
       @save="onSave"
     />
     <dialog
@@ -351,12 +384,20 @@ onUnmounted(() => clearTimeout(toastTimer))
       tabindex="-1"
       aria-labelledby="delete-title"
       @close="deleting = undefined"
+      @cancel="saving && $event.preventDefault()"
     >
       <h2 id="delete-title">¿Eliminar este momento?</h2>
       <p>“{{ deleting.title }}” se eliminará de este navegador.</p>
       <div>
-        <button class="secondary" @click="deleting = undefined">Cancelar</button
-        ><button class="primary" @click="onDelete">Eliminar evento</button>
+        <button
+          class="secondary"
+          :disabled="saving"
+          @click="deleting = undefined"
+        >
+          Cancelar</button
+        ><button class="primary" :disabled="saving" @click="onDelete">
+          Eliminar evento
+        </button>
       </div>
     </dialog>
     <Transition name="toast"

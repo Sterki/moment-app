@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { createId } from '~/utils/createId'
 import { X, Plus, Pencil, Check, ArrowLeft, Palette } from 'lucide-vue-next'
 import {
   categoryColors,
@@ -6,8 +7,12 @@ import {
   type CategoryColor,
 } from '~/types/category'
 import { symbols, emojiSymbols } from '~/types/symbols'
-const props = defineProps<{ categories: EventCategory[] }>()
-const emit = defineEmits<{ close: []; save: [category: EventCategory] }>()
+const props = defineProps<{
+  categories: EventCategory[]
+  saveCategory: (category: EventCategory) => Promise<boolean>
+}>()
+const emit = defineEmits<{ close: [] }>()
+const saving = ref(false)
 const dialog = ref<HTMLDialogElement>()
 const editing = ref(false)
 const selectedId = ref('')
@@ -22,8 +27,9 @@ const preview = computed(() => ({
   emoji: symbol.value,
   color: color.value,
 }))
-const { onBackdropPointerDown, onBackdropClick } = useModalDialog(dialog, () =>
-  emit('close'),
+const { onBackdropPointerDown, onBackdropClick } = useModalDialog(
+  dialog,
+  () => !saving.value && emit('close'),
 )
 function edit(category?: EventCategory) {
   selectedId.value = category?.id || ''
@@ -37,7 +43,8 @@ function edit(category?: EventCategory) {
   savedMessage.value = ''
   editing.value = true
 }
-function submit() {
+async function submit() {
+  if (saving.value) return
   const label = name.value.trim()
   if (!label) {
     error.value = 'Dale un nombre a tu categoría.'
@@ -53,12 +60,25 @@ function submit() {
     error.value = 'Ya tienes una categoría con ese nombre.'
     return
   }
-  emit('save', {
-    id: selectedId.value || crypto.randomUUID(),
-    label,
-    emoji: symbol.value,
-    color: color.value,
-  })
+  saving.value = true
+  let saved = false
+  try {
+    saved = await props.saveCategory({
+      id: selectedId.value || createId(),
+      label,
+      emoji: symbol.value,
+      color: color.value,
+    })
+  } catch {
+    /* Keep the form and report failure. */
+  } finally {
+    saving.value = false
+  }
+  if (!saved) {
+    error.value =
+      'No se pudo guardar la categoría. Comprueba el almacenamiento y que el nombre no exista ya, y vuelve a intentarlo.'
+    return
+  }
   savedMessage.value = selectedId.value
     ? 'Categoría actualizada. Sus eventos también lucen el nuevo estilo.'
     : 'Categoría creada. Ya puedes usarla en tus eventos.'
@@ -72,6 +92,7 @@ function submit() {
     tabindex="-1"
     aria-labelledby="categories-title"
     @close="emit('close')"
+    @cancel="saving && $event.preventDefault()"
     @pointerdown="onBackdropPointerDown"
     @click="onBackdropClick"
   >
@@ -81,6 +102,7 @@ function submit() {
         type="button"
         class="icon-button"
         aria-label="Cerrar categorías"
+        :disabled="saving"
         @click="emit('close')"
       >
         <X :size="21" />
@@ -211,11 +233,25 @@ function submit() {
       </fieldset>
       <p v-if="error" class="category-form-error" role="alert">{{ error }}</p>
       <div class="category-form-actions">
-        <button type="button" class="text-button" @click="editing = false">
+        <button
+          type="button"
+          class="text-button"
+          :disabled="saving"
+          @click="editing = false"
+        >
           <ArrowLeft :size="15" />Volver</button
-        ><button type="submit" class="primary">
+        ><button
+          type="submit"
+          class="primary"
+          :disabled="saving"
+          :aria-busy="saving"
+        >
           <Check :size="17" />{{
-            selectedId ? 'Guardar cambios' : 'Crear categoría'
+            saving
+              ? 'Guardando…'
+              : selectedId
+                ? 'Guardar cambios'
+                : 'Crear categoría'
           }}
         </button>
       </div>
