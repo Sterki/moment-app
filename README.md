@@ -66,3 +66,25 @@ Para la comprobación adicional con WebKit y tamaño de iPhone, instala Playwrig
 El bloque superior muestra el evento futuro más cercano por fecha y hora, sin prioridad de favoritos e independientemente de los filtros de tarjetas. Al llegar su hora, pasa al siguiente evento pendiente. Usa el color y símbolo de su categoría, fecha y hora locales y una cuenta atrás adaptable a móvil.
 
 La prueba `node tests/featured-webkit.mjs` (con el mismo entorno Playwright/WebKit) comprueba la prioridad cronológica frente a favoritos, independencia de filtros, relevo al vencer, estado vacío y tamaños de móvil y escritorio.
+
+## Apariencia y emojis
+
+El botón **Apariencia**, junto a Crear evento, permite elegir entre seis fondos (Original, Amanecer, Lavanda, Océano, Bosque y Noche), un color liso y tres opciones de movimiento: ninguno, luz suave o destellos. La vista previa afecta a la página sin guardar; Cancelar la revierte y Guardar espera a que termine la escritura. Restablecer prepara los valores originales y requiere Guardar para persistirlos.
+
+Las preferencias se guardan por separado en `meta`, clave `appearance.v1`, dentro de IndexedDB. No cambia la versión de la base de datos ni los registros de eventos o categorías. Se sincronizan entre pestañas compatibles mediante BroadcastChannel. Cada fondo define una paleta común para las tarjetas, el destacado, los botones y controles. Las categorías conservan su identidad en el icono y en una franja de color. Noche y los colores personalizados oscuros adaptan también el contraste. Los efectos usan pocos elementos y solo animan transformaciones y opacidad; se retiran al ocultar la pestaña o activar Reducir movimiento.
+
+El selector de categorías contiene 216 emojis agrupados, búsqueda en español sin distinguir acentos y entrada de un emoji desde el teclado. Acepta secuencias con tonos de piel, familias, banderas y teclas; rechaza palabras y varios emojis separados. Los iconos de Lucide y los emojis anteriores siguen siendo válidos.
+
+Validación adicional:
+
+```sh
+node --experimental-strip-types --test tests/appearance-data.test.mjs
+npm run generate
+node tests/appearance-browser.mjs
+```
+
+La prueba del navegador utiliza un perfil temporal de Chrome para comprobar vista previa, cancelación, guardado y reinicio, fallo de escritura, movimiento reducido, tamaños móviles, restauración y persistencia de un emoji personalizado, verificando que los eventos no cambian.
+
+La comprobación opcional `node tests/appearance-webkit.mjs` usa el mismo entorno Playwright/WebKit descrito antes y prueba estos flujos en una configuración de iPhone, incluido que Enter al buscar emojis no guarde accidentalmente la categoría.
+
+Las animaciones de apariencia usan tres luces amplias en movimiento o doce destellos geométricos de 8–16 px con un halo suave. No emplean emojis decorativos ni desenfoques animados y se desactivan con Reducir movimiento.

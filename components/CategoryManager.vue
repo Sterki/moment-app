@@ -6,7 +6,7 @@ import {
   type EventCategory,
   type CategoryColor,
 } from '~/types/category'
-import { symbols, emojiSymbols } from '~/types/symbols'
+import { symbols } from '~/types/symbols'
 const props = defineProps<{
   categories: EventCategory[]
   saveCategory: (category: EventCategory) => Promise<boolean>
@@ -217,19 +217,7 @@ async function submit() {
             <CategorySymbol :symbol="s.id" :size="23" />
           </button>
         </div>
-        <div v-else class="symbol-grid" :class="color">
-          <button
-            v-for="emoji in emojiSymbols"
-            :key="emoji"
-            type="button"
-            :class="{ active: symbol === emoji }"
-            :aria-label="emoji"
-            :aria-pressed="symbol === emoji"
-            @click="symbol = emoji"
-          >
-            <CategorySymbol :symbol="emoji" />
-          </button>
-        </div>
+        <EmojiPicker v-else v-model="symbol" />
       </fieldset>
       <p v-if="error" class="category-form-error" role="alert">{{ error }}</p>
       <div class="category-form-actions">

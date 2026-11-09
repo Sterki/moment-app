@@ -1,3 +1,5 @@
+import { isEmojiSymbol } from './emojis'
+export { emojiSymbols } from './emojis'
 import {
   Cake,
   Plane,
@@ -50,23 +52,9 @@ export const symbols = [
   { id: 'calendar-heart', label: 'Fecha especial', icon: CalendarHeart },
   { id: 'ticket', label: 'Entrada', icon: Ticket },
 ] as const
-export const emojiSymbols = [
-  '🎂',
-  '🌴',
-  '✨',
-  '💛',
-  '🎉',
-  '🎁',
-  '✈️',
-  '🌈',
-  '🎸',
-  '🎓',
-  '💍',
-  '🌸',
-]
 export function isValidSymbol(value: unknown): value is string {
   return (
     typeof value === 'string' &&
-    (symbols.some((s) => s.id === value) || emojiSymbols.includes(value))
+    (symbols.some((s) => s.id === value) || isEmojiSymbol(value))
   )
 }

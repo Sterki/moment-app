@@ -1,3 +1,4 @@
+import { validAppearance, type Appearance } from '~/types/appearance'
 import { createId } from './createId'
 import type { CountdownEvent } from '~/types/event'
 import {
@@ -203,4 +204,31 @@ export async function changeMomentData(
     }
   })
   // Success means the transaction completed, not just the individual request.
+}
+
+// Appearance is a separate record; saving it never changes events or categories.
+export async function readAppearancePreferences(): Promise<Appearance | null> {
+  const db = await open()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('meta', 'readonly')
+    const request = tx.objectStore('meta').get('appearance.v1')
+    tx.onabort = () => reject(tx.error || new Error('Appearance read aborted'))
+    tx.oncomplete = () => {
+      if (request.result === undefined) resolve(null)
+      else if (validAppearance(request.result)) resolve(request.result)
+      else reject(new Error('Invalid appearance'))
+    }
+  })
+}
+export async function writeAppearancePreferences(
+  value: Appearance,
+): Promise<void> {
+  if (!validAppearance(value)) throw new Error('Invalid appearance')
+  const db = await open()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('meta', 'readwrite')
+    tx.onabort = () => reject(tx.error || new Error('Appearance write aborted'))
+    tx.oncomplete = () => resolve()
+    tx.objectStore('meta').put({ ...value }, 'appearance.v1')
+  })
 }
